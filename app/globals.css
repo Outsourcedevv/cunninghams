@@ -27,11 +27,15 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
-/* Scroll reveal. Skipped for visitors who ask for reduced motion, and undone by the
-   <noscript> override in layout.tsx so the page stays readable without JavaScript.
-   Hidden elements keep their layout box, so revealing them shifts nothing. */
+/* Scroll reveal. Skipped for visitors who ask for reduced motion.
+
+   Everything below the hero carries data-reveal, so hiding it is only ever safe when the
+   script that un-hides it is definitely running: the .js-reveal gate is added by the head
+   script in layout.tsx and dropped again if the reveal never happens. Without that gate a
+   blocked bundle, a failed hydration or a throttled observer left the whole page as bare
+   section colours. Hidden elements keep their layout box, so revealing them shifts nothing. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-reveal] {
+  .js-reveal [data-reveal] {
     opacity: 0;
     transform: translateY(28px);
     transition:
@@ -39,24 +43,24 @@ a:focus-visible {
       transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
-  [data-reveal].is-visible {
+  .js-reveal [data-reveal].is-visible {
     opacity: 1;
     transform: none;
   }
 
-  [data-stagger] > [data-reveal]:nth-child(2) {
+  .js-reveal [data-stagger] > [data-reveal]:nth-child(2) {
     transition-delay: 90ms;
   }
-  [data-stagger] > [data-reveal]:nth-child(3) {
+  .js-reveal [data-stagger] > [data-reveal]:nth-child(3) {
     transition-delay: 180ms;
   }
-  [data-stagger] > [data-reveal]:nth-child(4) {
+  .js-reveal [data-stagger] > [data-reveal]:nth-child(4) {
     transition-delay: 270ms;
   }
-  [data-stagger] > [data-reveal]:nth-child(5) {
+  .js-reveal [data-stagger] > [data-reveal]:nth-child(5) {
     transition-delay: 360ms;
   }
-  [data-stagger] > [data-reveal]:nth-child(6) {
+  .js-reveal [data-stagger] > [data-reveal]:nth-child(6) {
     transition-delay: 450ms;
   }
 }
@@ -209,16 +213,49 @@ a:focus-visible {
   padding: 0 24px;
 }
 
-/* Fixed aspect so the portrait footage is never cropped */
-.video-player {
+/* Fixed aspect so the portrait footage is never cropped. The size lives on the cell rather
+   than the video because the cell also positions the tap-to-play control over it. */
+.video-cell {
+  position: relative;
   display: block;
   width: min(340px, 22vw);
-  height: auto;
   aspect-ratio: 9 / 16;
 }
 
+.video-player {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Only rendered once a phone has actually refused to autoplay, so it is the one thing
+   standing between the visitor and a black rectangle — it sits above the player and is
+   sized for a thumb rather than a cursor. */
+.video-tap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 14px 26px;
+  border: 1px solid #c9a84c;
+  background: rgba(5, 15, 50, 0.72);
+  color: #c9a84c;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.video-tap:hover {
+  background: rgba(5, 15, 50, 0.88);
+  color: #e0c06a;
+}
+
 @media (max-width: 1100px) {
-  .video-player {
+  .video-cell {
     width: min(320px, 42vw);
   }
 }
@@ -292,8 +329,12 @@ a:focus-visible {
     align-items: center;
     gap: 16px;
   }
-  .video-player {
+  .video-cell {
     width: min(420px, 86vw);
+  }
+  /* Four stacked players are already more than a phone should be decoding at once */
+  .video-backdrop {
+    display: none;
   }
   .split {
     grid-template-columns: 1fr;

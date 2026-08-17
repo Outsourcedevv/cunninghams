@@ -3,6 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+// Set by the head script in layout.tsx, cleared by useScrollReveal once it owns the reveal.
+declare global {
+  interface Window {
+    __revealFailsafe?: ReturnType<typeof setTimeout>;
+  }
+}
+
 const COLORS = {
   darkBlue: "#050F32",
   darkRed: "#6B1515",
@@ -150,6 +157,27 @@ const MENU_PHOTOS = [
 
 function VenueVideo() {
   const frameRef = useRef<HTMLDivElement>(null);
+  // Phones refuse muted autoplay outright in iOS Low Power Mode and Android data saver, and
+  // there is no way to detect either up front — play() simply rejects. Until it does, the
+  // players stay decoration; once it has, they need a real control or the section is dead.
+  const [needsTap, setNeedsTap] = useState(false);
+
+  // A phone will only honour play() inside the gesture that asked for it, so the tap has to
+  // reach every player synchronously — one tap starts the section rather than just one clip.
+  const playAll = () => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const started = Array.from(frame.querySelectorAll("video"))
+      .filter((player) => player.offsetParent)
+      .map((player) => {
+        player.muted = true;
+        return player.play();
+      });
+
+    Promise.allSettled(started).then((results) => {
+      if (results.some((result) => result.status === "fulfilled")) setNeedsTap(false);
+    });
+  };
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -163,13 +191,19 @@ function VenueVideo() {
 
     const onScreen = new Set<HTMLVideoElement>();
     const start = (player: HTMLVideoElement) => {
-      if (onScreen.has(player)) player.play().catch(() => {});
+      // The blurred backdrop is dropped on phones to save a decode, and a display:none
+      // player can never play — asking anyway would report a false autoplay refusal.
+      if (!onScreen.has(player) || !player.offsetParent) return;
+      player.play().catch(() => setNeedsTap(true));
     };
+
+    let delivered = false;
 
     // Each player is watched separately: on mobile they stack into a block far
     // taller than the viewport, so a threshold on the whole row never fires.
     const observer = new IntersectionObserver(
       (entries) => {
+        delivered = true;
         entries.forEach((entry) => {
           const player = entry.target as HTMLVideoElement;
           if (entry.isIntersecting) {
@@ -184,6 +218,17 @@ function VenueVideo() {
       { threshold: 0.1 },
     );
 
+    // Same throttling trap as the scroll reveal: a mobile browser that stops delivering
+    // these callbacks would leave every player parked on a black frame forever. Falling
+    // back to playing the lot beats showing nothing; off-screen ones pause on the next scroll.
+    const watchdog = setTimeout(() => {
+      if (delivered) return;
+      players.forEach((player) => {
+        onScreen.add(player);
+        start(player);
+      });
+    }, 1000);
+
     const retry = (event: Event) => start(event.currentTarget as HTMLVideoElement);
     players.forEach((player) => {
       observer.observe(player);
@@ -191,6 +236,7 @@ function VenueVideo() {
     });
 
     return () => {
+      clearTimeout(watchdog);
       observer.disconnect();
       players.forEach((player) => player.removeEventListener("canplay", retry));
     };
@@ -216,13 +262,17 @@ function VenueVideo() {
           borderBottom: "1px solid rgba(201, 168, 76, 0.35)",
         }}
       >
+        {/* Purely a wash of colour behind the row, and a fifth thing for a phone to decode.
+            CSS drops it below 820px, where it is mostly hidden behind the stacked players. */}
         <video
+          autoPlay
           muted
           loop
           playsInline
           preload="auto"
           aria-hidden="true"
           tabIndex={-1}
+          className="video-backdrop"
           style={{
             position: "absolute",
             inset: 0,
@@ -239,18 +289,25 @@ function VenueVideo() {
 
         <div className="video-row">
           {VIDEOS.map((src) => (
-            <video
-              key={src}
-              muted
-              loop
-              playsInline
-              preload="auto"
-              className="video-player"
-              style={{ objectFit: "cover", boxShadow: "0 0 70px rgba(0, 0, 0, 0.65)", pointerEvents: "none" }}
-            >
-              <source src={src} type="video/mp4" />
-              Your browser does not support video playback.
-            </video>
+            <div key={src} className="video-cell">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="video-player"
+                style={{ objectFit: "cover", boxShadow: "0 0 70px rgba(0, 0, 0, 0.65)", pointerEvents: "none" }}
+              >
+                <source src={src} type="video/mp4" />
+                Your browser does not support video playback.
+              </video>
+              {needsTap ? (
+                <button type="button" className="video-tap" onClick={playAll} aria-label="Play videos">
+                  <span aria-hidden="true">▶</span> Play
+                </button>
+              ) : null}
+            </div>
           ))}
         </div>
       </div>
@@ -478,16 +535,36 @@ function EventEnquiry() {
 
 function useScrollReveal() {
   useEffect(() => {
-    const targets = Array.from(document.querySelectorAll("[data-reveal]"));
-    if (!targets.length) return;
+    const root = document.documentElement;
+    // The head script hid the sections and armed a timer to un-hide them if this never ran.
+    // It did run, so the timer is not needed — but a failure from here on has to un-hide too.
+    clearTimeout(window.__revealFailsafe);
+    const revealAll = () => {
+      root.classList.remove("js-reveal");
+    };
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      targets.forEach((el) => el.classList.add("is-visible"));
+    const targets = Array.from(document.querySelectorAll("[data-reveal]"));
+    if (!targets.length || !("IntersectionObserver" in window)) {
+      revealAll();
       return;
     }
 
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      revealAll();
+      return;
+    }
+
+    // Nothing has been revealed yet, so a silent observer keeps the page blank. Mobile
+    // browsers stop delivering these callbacks in a backgrounded or non-compositing tab,
+    // and the first batch is otherwise reliable, so silence past a second means broken.
+    let delivered = false;
+    const watchdog = setTimeout(() => {
+      if (!delivered) revealAll();
+    }, 1000);
+
     const observer = new IntersectionObserver(
       (entries) => {
+        delivered = true;
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
           entry.target.classList.add("is-visible");
@@ -500,7 +577,10 @@ function useScrollReveal() {
     );
 
     targets.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(watchdog);
+      observer.disconnect();
+    };
   }, []);
 }
 

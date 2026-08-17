@@ -42,10 +42,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-IE" className={rye.variable}>
       <head>
-        {/* Scroll reveal starts elements hidden and JavaScript brings them back. Without it, undo that. */}
-        <noscript
+        {/* Arms the scroll reveal. Runs before the first paint, so hiding the sections never
+            flashes; the class is what allows globals.css to hide them at all, which means no
+            JavaScript means no hiding. The timer is the other half: if the page script has not
+            taken over within 2.5s — bundle blocked, hydration failed, an older phone browser
+            choking on the chunk — the gate drops and everything below the hero is simply
+            readable. useScrollReveal clears it as soon as it owns the reveal. */}
+        <script
           dangerouslySetInnerHTML={{
-            __html: "<style>[data-reveal]{opacity:1 !important;transform:none !important}</style>",
+            __html:
+              "(function(){var r=document.documentElement;r.classList.add('js-reveal');" +
+              "window.__revealFailsafe=setTimeout(function(){r.classList.remove('js-reveal')},2500)})()",
           }}
         />
       </head>
