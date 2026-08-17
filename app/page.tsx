@@ -1,69 +1,1087 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+
+const COLORS = {
+  darkBlue: "#050F32",
+  darkRed: "#6B1515",
+  offWhite: "#F5EFE0",
+  gold: "#C9A84C",
+  goldLight: "#E0C06A",
+};
+
+const BOOKING_URL = "https://dishcult.com/restaurant/cunninghamsbar?sortOrder=0&page=1";
+const ROOMS_URL = "https://www.booking.com/hotel/ie/cunningham-39-s-guesthouse.html";
+const ENQUIRY_EMAIL = "info@cunninghamskildare.com";
+const PHONE_DISPLAY = "(045) 521 780";
+
+const NAV_ITEMS = ["About", "Video", "Menu", "Drinks", "Pavillion", "Music", "Rooms", "Hours", "Contact"];
+
+const PAVILION_PHOTOS = [
+  {
+    src: "/pavilion-interior.webp",
+    alt: "The Pavillion's timber-roofed room at Cunninghams, with buttoned leather banquettes, cast iron tables and glazed sides opening onto greenery",
+    caption: "Under the timber roof",
+  },
+  {
+    src: "/pavilion-fireside.webp",
+    alt: "Buttoned leather booths, framed racing prints and wall-mounted screens beside the stove in the Pavillion",
+    caption: "Booths, screens and the stove",
+  },
+  {
+    src: "/pavilion-roof.webp",
+    alt: "Looking up at the Pavillion's painted timber roof, its overhead heaters, a vintage Player's Please sign and a mounted wooden propeller",
+    caption: "Player's Please, and an old propeller",
+  },
+];
+
+// Every claim below is sourced: the building from the National Inventory of Architectural
+// Heritage (record 11817051), the tower and cathedral from St Brigid's own records, the
+// business from IntoKildare. Do not add to this without a source — it is a real history.
+const FULL_STORY = [
+  {
+    heading: "The house came first",
+    body: "Round Tower House was built around 1830, a three-bay, two-storey merchant's house of graceful Georgian proportions at the edge of Market Square, and it has been a place of business since the early 1800s. Ireland's National Inventory of Architectural Heritage records it as a building of regional importance, listed for its architectural, artistic, historical and social interest, and singles out the decorative render work and raised lettering along the parapet as the work of local craftsmen.",
+  },
+  {
+    heading: "Named for the tower across the square",
+    body: "Kildare's round tower rises 33 metres beside St Brigid's Cathedral — the second tallest in Ireland, and the tallest that visitors can still climb. Its base is cut from Wicklow granite hauled more than forty miles; the storeys above it are local limestone. St Brigid founded her monastery on that ground in 480 AD, and the cathedral standing there today was built in 1223.",
+  },
+  {
+    heading: "A bar since 1916",
+    body: "Cunninghams has traded here since 1916. What began as a village bar now runs as a bar, dining room, music venue and guesthouse under one roof, with the upstairs room given over to private events for up to fifty guests.",
+  },
+  {
+    heading: "The kitchen and the bar today",
+    body: "The kitchen serves an extensive Thai menu alongside European and Irish classics, all cooked to order. A lively crowd of local trad musicians gathers in the bar several nights a week, and there is piano on Saturdays. Upstairs, ten adults-only rooms are decorated in a classic, timeless style drawn from the owners' love of travel.",
+  },
+  {
+    heading: "Where you are",
+    body: "Market Square puts St Brigid's Cathedral and the round tower a short walk from the door, with Kildare Village, the Irish National Stud and Japanese Gardens, and the Curragh Racecourse all a short drive away.",
+  },
+];
+
+const MENU = [
+  {
+    category: "Starters",
+    items: ["Prawn Crackers", "Soup", "Spring Rolls", "Prawn Toast", "Chicken Satay", "Wings", "Salt & Pepper Squid", "Crispy Duck Pancakes", "Mixed Platter"],
+  },
+  { category: "Salads", items: ["Chicken & Mango", "Vietnamese Prawn", "Thai Beef"] },
+  { category: "Above the Charcoal", items: ["Charcoal Chicken", "BBQ Ribs", "Half Roasted Duck", "Sirloin", "Rib Eye"] },
+  { category: "Fish", items: ["Salt & Pepper Prawns", "King Prawn Tempura", "Steamed Salmon", "Sea Bass", "Whole Sea Bream"] },
+  { category: "From the Wok", items: ["Vegetable Stir Fry", "Nasi Goreng", "Sweet & Sour Pork", "Kung Pao Chicken", "Beef Black Bean"] },
+  { category: "Oodles of Noodles", items: ["Chow Mein", "Singapore Noodles", "Pad Thai", "Beef Ho Fun", "Laksa"] },
+  { category: "Curries", items: ["Yellow", "Red", "Thai Green", "Panang", "Massaman"] },
+  { category: "Sides", items: ["Boiled Rice", "Egg Noodles", "Fried Rice", "Home Cut Fries"] },
+];
+
+const DRINKS = [
+  { group: "White Wine", items: ["Pinot Grigio", "Chardonnay", "Sauvignon Blanc", "Albariño", "Petit Chablis", "Sancerre", "Non-Alcoholic White"] },
+  { group: "Red Wine", items: ["Montepulciano", "Rioja", "Merlot", "Cabernet Sauvignon", "Malbec", "Chianti", "Valpolicella", "Pinot Noir", "Shiraz"] },
+  { group: "Rosé", items: ["Fontareche Corbières"] },
+  { group: "Sparkling", items: ["Prosecco Frizzante", "Prosecco Spumante", "Non-Alcoholic Sparkling"] },
+  {
+    group: "On Draught",
+    items: ["Guinness", "Heineken", "Carlsberg", "Coors", "Smithwick's", "Hop House 13", "O'Hara's IPA", "Orchard Thieves", "Rock Shore Cider", "Rock Shore Lager"],
+  },
+  { group: "Gin", items: ["Beefeater", "Tanqueray", "Bombay Sapphire", "Hendrick's", "Dingle", "Drumshanbo Gunpowder", "Boatyard", "Monkey 47"] },
+  { group: "Whiskey", items: ["Jameson", "Jameson 18", "Redbreast 12", "Southern Comfort", "Tyrconnell Single Malt", "Madeira Cask", "Port Cask", "Sherry Cask"] },
+  { group: "Vodka", items: ["Smirnoff", "Dingle"] },
+  { group: "Rum & Brandy", items: ["Bacardi White", "Captain Morgan", "Hennessy VS"] },
+  { group: "Liqueurs", items: ["Baileys", "Cointreau", "Tia Maria", "Drambuie"] },
+];
+
+const BAR_HOURS = [
+  { days: "Monday – Thursday", hours: "17:00 – 23:30" },
+  { days: "Friday", hours: "17:00 – 00:30" },
+  { days: "Saturday", hours: "13:00 – 00:30" },
+  { days: "Sunday", hours: "13:00 – 23:00" },
+];
+
+const KITCHEN_HOURS = [
+  { days: "Wednesday – Thursday", hours: "17:00 – 21:00" },
+  { days: "Friday – Saturday", hours: "17:00 – 21:30" },
+  { days: "Sunday", hours: "13:00 – 19:00" },
+  { days: "Sunday Roast", hours: "13:00 – 15:00" },
+];
+
+const MUSIC = [
+  { day: "Monday", act: "Trad Session", desc: "Local musicians gather by the open fire" },
+  { day: "Wednesday", act: "Trad Session", desc: "A lively night of traditional Irish music" },
+  { day: "Saturday", act: "Live Piano", desc: "Weekend evenings with live piano" },
+];
+
+const ROOM_FEATURES = [
+  "Twin & double rooms",
+  "Soundproofed with private entrances",
+  "Flat-screen TV & coffee machine",
+  "Walk-in shower & free toiletries",
+  "Free private parking on site",
+  "Adults only",
+];
+
+const label = (color: string) => ({
+  color,
+  letterSpacing: "3px",
+  fontSize: "12px",
+  textTransform: "uppercase" as const,
+  marginBottom: "16px",
+});
+
+const divider = { width: "60px", height: "2px", background: COLORS.gold, margin: "0 auto 40px" };
+
+const HERO_SHADOW = "0 2px 10px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9)";
+
+const SIGN_FONT = "var(--font-sign), Georgia, serif";
+
+// next/image applies basePath on its own, but a plain <source> tag and a CSS url() do not,
+// so these two need it applied by hand or they 404 wherever the site is not at the root.
+const ASSETS = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+const VIDEOS = ["/dining-room.mp4", "/kitchen.mp4", "/sunday-roast.mp4", "/rooms.mp4"].map((file) => `${ASSETS}${file}`);
+
+const MENU_PHOTOS = [
+  { src: "/menu-charcoal.webp", caption: "Above the Charcoal", alt: "Beef burger with melted cheese and crispy onions, served with a bowl of chunky chips" },
+  { src: "/menu-wok.webp", caption: "From the Wok", alt: "Thai red curry with chicken, coconut cream, fresh basil and red chilli" },
+  { src: "/menu-noodles.webp", caption: "Oodles of Noodles", alt: "Noodles with peppers, greens and crispy chicken in a curry sauce" },
+  { src: "/menu-dessert.webp", caption: "To Finish", alt: "Warm sponge pudding with custard and a scoop of vanilla ice cream" },
+];
+
+function VenueVideo() {
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const players = Array.from(frame.querySelectorAll("video"));
+
+    // React omits the muted attribute from prerendered HTML; without it autoplay is blocked
+    players.forEach((player) => {
+      player.muted = true;
+    });
+
+    const onScreen = new Set<HTMLVideoElement>();
+    const start = (player: HTMLVideoElement) => {
+      if (onScreen.has(player)) player.play().catch(() => {});
+    };
+
+    // Each player is watched separately: on mobile they stack into a block far
+    // taller than the viewport, so a threshold on the whole row never fires.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const player = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting) {
+            onScreen.add(player);
+            start(player);
+          } else {
+            onScreen.delete(player);
+            player.pause();
+          }
+        });
+      },
+      { threshold: 0.1 },
+    );
+
+    const retry = (event: Event) => start(event.currentTarget as HTMLVideoElement);
+    players.forEach((player) => {
+      observer.observe(player);
+      player.addEventListener("canplay", retry);
+    });
+
+    return () => {
+      observer.disconnect();
+      players.forEach((player) => player.removeEventListener("canplay", retry));
+    };
+  }, []);
+
+  return (
+    <section id="video" style={{ background: COLORS.darkBlue, padding: "100px 0" }}>
+      <div data-reveal style={{ textAlign: "center", padding: "0 40px" }}>
+        <p style={label(COLORS.gold)}>Take a Look</p>
+        <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Inside Cunninghams</h2>
+        <div style={divider} />
+      </div>
+
+      <div
+        ref={frameRef}
+        data-reveal
+        className="video-frame"
+        style={{
+          position: "relative",
+          width: "100%",
+          overflow: "hidden",
+          borderTop: "1px solid rgba(201, 168, 76, 0.35)",
+          borderBottom: "1px solid rgba(201, 168, 76, 0.35)",
+        }}
+      >
+        <video
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          tabIndex={-1}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "blur(36px) brightness(0.42) saturate(1.15)",
+            transform: "scale(1.18)",
+            pointerEvents: "none",
+          }}
+        >
+          <source src={VIDEOS[0]} type="video/mp4" />
+        </video>
+
+        <div className="video-row">
+          {VIDEOS.map((src) => (
+            <video
+              key={src}
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="video-player"
+              style={{ objectFit: "cover", boxShadow: "0 0 70px rgba(0, 0, 0, 0.65)", pointerEvents: "none" }}
+            >
+              <source src={src} type="video/mp4" />
+              Your browser does not support video playback.
+            </video>
+          ))}
+        </div>
+      </div>
+
+    </section>
+  );
+}
+
+// The panel is always in the markup and only hidden with display, so search engines index the
+// history even while it is collapsed. Nothing inside carries data-reveal: the reveal observer
+// only ever runs on mount, and a hidden element never intersects, so it would stay invisible
+// at opacity 0 after being expanded.
+function FullStory() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ marginTop: "56px" }}>
+      <div data-reveal style={{ textAlign: "center" }}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="full-story"
+          style={{
+            font: "inherit",
+            padding: "14px 40px",
+            border: `1px solid ${COLORS.darkRed}`,
+            background: "transparent",
+            color: COLORS.darkRed,
+            letterSpacing: "2px",
+            fontSize: "13px",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            transition: "background 0.3s, color 0.3s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = COLORS.darkRed;
+            e.currentTarget.style.color = COLORS.offWhite;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = COLORS.darkRed;
+          }}
+        >
+          {open ? "Show Less" : "Our Full Story"}
+        </button>
+      </div>
+
+      <div
+        id="full-story"
+        style={{
+          display: open ? "block" : "none",
+          maxWidth: "760px",
+          margin: "44px auto 0",
+          textAlign: "left",
+          borderTop: `1px solid rgba(107, 21, 21, 0.25)`,
+          paddingTop: "44px",
+        }}
+      >
+        {FULL_STORY.map((part) => (
+          <div key={part.heading} style={{ marginBottom: "34px" }}>
+            <h3 style={{ fontSize: "20px", fontWeight: 400, color: COLORS.darkBlue, marginBottom: "12px" }}>{part.heading}</h3>
+            <p style={{ fontSize: "17px", lineHeight: 1.9, color: "#333" }}>{part.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// There is no mail server behind this site, so the form hands the finished message to the
+// visitor's own email client rather than pretending to send it. The address is shown in the
+// confirmation too, because a browser with no mail client configured does nothing visible.
+// Same rule as FullStory: no data-reveal inside the panel, the observer only runs on mount.
+function EventEnquiry() {
+  const [open, setOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
+  const [details, setDetails] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [handedOff, setHandedOff] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [open]);
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const found: Record<string, string> = {};
+    if (!firstName.trim()) found.firstName = "Please enter your first name.";
+    if (!surname.trim()) found.surname = "Please enter your surname.";
+    if (!email.trim()) found.email = "Please enter your email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) found.email = "That email address does not look right.";
+    if (!details.trim()) found.details = "Please tell us what you have in mind.";
+    setErrors(found);
+    if (Object.keys(found).length > 0) {
+      const firstBad = ["firstName", "surname", "email", "details"].find((key) => found[key]);
+      document.getElementById(`enquiry-${firstBad}`)?.focus();
+      return;
+    }
+
+    const body = [`Name: ${firstName.trim()} ${surname.trim()}`, `Email: ${email.trim()}`, "", "Enquiry:", details.trim()].join("\r\n");
+    window.location.href = `mailto:${ENQUIRY_EMAIL}?subject=${encodeURIComponent("Event enquiry — The Pavillion")}&body=${encodeURIComponent(body)}`;
+    setHandedOff(true);
+  };
+
+  const field = (key: string, label: string, value: string, set: (v: string) => void, type = "text") => (
+    <div className="enquiry-field">
+      <label htmlFor={`enquiry-${key}`}>{label}</label>
+      <input
+        id={`enquiry-${key}`}
+        type={type}
+        value={value}
+        autoComplete={key === "firstName" ? "given-name" : key === "surname" ? "family-name" : key === "email" ? "email" : "off"}
+        aria-invalid={errors[key] ? true : undefined}
+        aria-describedby={errors[key] ? `enquiry-${key}-error` : undefined}
+        onChange={(e) => set(e.target.value)}
+      />
+      {errors[key] && (
+        <span className="enquiry-error" id={`enquiry-${key}-error`}>
+          {errors[key]}
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: "56px" }}>
+      <div data-reveal style={{ textAlign: "center" }}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="event-enquiry"
+          style={{
+            font: "inherit",
+            padding: "14px 40px",
+            border: `1px solid ${COLORS.darkRed}`,
+            background: "transparent",
+            color: COLORS.darkRed,
+            letterSpacing: "2px",
+            fontSize: "13px",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            transition: "background 0.3s, color 0.3s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = COLORS.darkRed;
+            e.currentTarget.style.color = COLORS.offWhite;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = COLORS.darkRed;
+          }}
+        >
+          {open ? "Close" : "Enquire About Events"}
+        </button>
+      </div>
+
+      <div id="event-enquiry" ref={panelRef} className="enquiry-panel" style={{ display: open ? "block" : "none" }}>
+        <p style={{ fontSize: "16px", lineHeight: 1.8, color: "#333", marginBottom: "28px" }}>
+          Birthdays, parties, race days, work get-togethers &mdash; tell us what you have in mind and we will come back to you.
+        </p>
+
+        <form onSubmit={submit} noValidate>
+          <div className="enquiry-row">
+            {field("firstName", "First name", firstName, setFirstName)}
+            {field("surname", "Surname", surname, setSurname)}
+          </div>
+          {field("email", "Email", email, setEmail, "email")}
+
+          <div className="enquiry-field">
+            <label htmlFor="enquiry-details">What are you enquiring about?</label>
+            <textarea
+              id="enquiry-details"
+              value={details}
+              aria-invalid={errors.details ? true : undefined}
+              aria-describedby={errors.details ? "enquiry-details-error" : undefined}
+              onChange={(e) => setDetails(e.target.value)}
+            />
+            {errors.details && (
+              <span className="enquiry-error" id="enquiry-details-error">
+                {errors.details}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              font: "inherit",
+              padding: "14px 40px",
+              border: `1px solid ${COLORS.darkRed}`,
+              background: COLORS.darkRed,
+              color: COLORS.offWhite,
+              letterSpacing: "2px",
+              fontSize: "13px",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            Send Enquiry
+          </button>
+        </form>
+
+        <p aria-live="polite" style={{ fontSize: "15px", lineHeight: 1.8, color: "#333", marginTop: "24px" }}>
+          {handedOff ? (
+            <>
+              Your email app should have opened with the message ready to send. If nothing happened, email us directly at{" "}
+              <a href={`mailto:${ENQUIRY_EMAIL}`} style={{ color: COLORS.darkRed }}>
+                {ENQUIRY_EMAIL}
+              </a>{" "}
+              or call {PHONE_DISPLAY}.
+            </>
+          ) : (
+            ""
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function useScrollReveal() {
+  useEffect(() => {
+    const targets = Array.from(document.querySelectorAll("[data-reveal]"));
+    if (!targets.length) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      targets.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      // Fires once the element's top edge is a little way into the viewport.
+      // A threshold would never trigger for blocks taller than the screen.
+      { threshold: 0, rootMargin: "0px 0px -12% 0px" },
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+}
+
+// The fixed nav wraps onto more rows as the viewport narrows, so its height cannot be
+// hardcoded. Publishing it lets anchor jumps land clear of it at every width.
+function useNavHeight() {
+  useEffect(() => {
+    const nav = document.querySelector(".site-nav");
+    if (!nav) return;
+
+    const publish = () => {
+      document.documentElement.style.setProperty("--nav-height", `${Math.round(nav.getBoundingClientRect().height)}px`);
+    };
+
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, []);
+}
 
 export default function Home() {
+  useScrollReveal();
+  useNavHeight();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+    <>
+      <header style={{ position: "fixed", top: 0, width: "100%", zIndex: 100 }}>
+        <nav
+          className="site-nav"
+          style={{
+            backgroundColor: "rgba(5, 15, 50, 0.97)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid rgba(201, 168, 76, 0.2)",
+          }}
+        >
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#top"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              fontFamily: SIGN_FONT,
+              color: COLORS.gold,
+              fontSize: "19px",
+              letterSpacing: "1px",
+              textDecoration: "none",
+            }}
           >
             <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              src="/logo.webp"
+              alt=""
+              width={38}
+              height={38}
+              preload
+              style={{ borderRadius: "50%", border: `1px solid ${COLORS.gold}`, flexShrink: 0 }}
             />
-            Deploy Now
+            CUNNINGHAMS
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+          <div className="nav-links">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                style={{
+                  color: COLORS.offWhite,
+                  textDecoration: "none",
+                  fontSize: "14px",
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = COLORS.gold)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = COLORS.offWhite)}
+              >
+                {item}
+              </a>
+            ))}
+          </div>
+          <a className="nav-book" href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
+            Book a Table
           </a>
+        </nav>
+      </header>
+
+      <main id="top">
+        {/* Hero */}
+        <section
+          style={{
+            position: "relative",
+            minHeight: "100vh",
+            background: COLORS.darkBlue,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            // The nav is fixed and grows to five rows on narrow screens, so a fixed top
+            // padding clips the heading. --nav-height is measured at runtime by useNavHeight.
+            padding: "calc(var(--nav-height, 84px) + 46px) 20px 90px",
+            overflow: "hidden",
+          }}
+        >
+          {/* On a tall phone, cover-cropping this landscape shot blows it up to ~3x the width the
+              viewport implies, so sizes overstates the slot to pull in a larger source. */}
+          <Image
+            src="/hero-dining-room.webp"
+            alt=""
+            fill
+            preload
+            sizes="(max-width: 820px) 150vw, 100vw"
+            style={{ objectFit: "cover", objectPosition: "center" }}
+          />
+          <div
+            aria-hidden="true"
+            style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(5,15,50,0.92), rgba(14,10,10,0.68) 45%, rgba(5,15,50,0.93))" }}
+          />
+          <div style={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <p style={{ ...label(COLORS.gold), letterSpacing: "4px", fontSize: "13px", marginBottom: "20px", textShadow: HERO_SHADOW }}>
+              Bar · Restaurant · Rooms · Kildare
+            </p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "20px", marginBottom: "24px", flexWrap: "wrap", justifyContent: "center" }}>
+              <h1
+                style={{
+                  fontFamily: SIGN_FONT,
+                  color: COLORS.gold,
+                  fontSize: "clamp(26px, 8vw, 82px)",
+                  fontWeight: 400,
+                  letterSpacing: "clamp(1px, 0.3vw, 3px)",
+                  lineHeight: 1.15,
+                  margin: 0,
+                  textShadow: HERO_SHADOW,
+                }}
+              >
+                CUNNINGHAMS
+              </h1>
+              <span style={{ color: COLORS.gold, fontSize: "clamp(14px, 2vw, 22px)", letterSpacing: "3px", fontStyle: "italic", textShadow: HERO_SHADOW }}>
+                Est. 1916
+              </span>
+            </div>
+            <p style={{ color: COLORS.offWhite, fontSize: "18px", maxWidth: "520px", lineHeight: 1.7, marginBottom: "40px", textShadow: HERO_SHADOW }}>
+              Award winning Gastro Pub, Supper Clubs &amp; Rooms
+            </p>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+              <a
+                href="#menu"
+                style={{
+                  padding: "14px 40px",
+                  border: `1px solid ${COLORS.gold}`,
+                  color: COLORS.gold,
+                  textDecoration: "none",
+                  letterSpacing: "2px",
+                  fontSize: "13px",
+                  textTransform: "uppercase",
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = COLORS.gold;
+                  e.currentTarget.style.color = COLORS.darkBlue;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = COLORS.gold;
+                }}
+              >
+                View Our Menu
+              </a>
+              <a
+                href={BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: "14px 40px",
+                  background: COLORS.gold,
+                  color: COLORS.darkBlue,
+                  textDecoration: "none",
+                  letterSpacing: "2px",
+                  fontSize: "13px",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  transition: "all 0.3s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.goldLight)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = COLORS.gold)}
+              >
+                Book a Table
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* About */}
+        <section id="about" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+          <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
+            <div data-reveal style={{ textAlign: "center" }}>
+              <p style={label(COLORS.darkRed)}>Our Story</p>
+              <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "24px", color: COLORS.darkBlue }}>The Round Tower House</h2>
+              <div style={divider} />
+            </div>
+            <div className="split" data-stagger>
+              <div data-reveal>
+                <p style={{ fontSize: "17px", lineHeight: 1.9, color: "#333", marginBottom: "24px" }}>
+                  Cunninghams has stood on the edge of Kildare&apos;s Market Square since 1916, in the building known as the Round Tower House. What began as a
+                  village bar is now a bar, dining room and music venue under one roof.
+                </p>
+                <p style={{ fontSize: "17px", lineHeight: 1.9, color: "#333" }}>
+                  Our kitchen celebrates ingredient-focused cooking &mdash; an extensive menu of Thai dishes alongside European and Irish classics. Old stone
+                  walls, a large open fire, and a proper welcome. Upstairs is available for private events for up to 50 guests.
+                </p>
+              </div>
+              <figure className="split-media" data-reveal>
+                <Image
+                  src="/shopfront.webp"
+                  alt="The painted frontage of Cunninghams on Market Square, with hanging flower baskets above the gold M. Cunningham lettering"
+                  width={1080}
+                  height={760}
+                  sizes="(max-width: 820px) 100vw, 560px"
+                />
+              </figure>
+            </div>
+
+            <FullStory />
+          </div>
+        </section>
+
+        {/* Video */}
+        <VenueVideo />
+
+        {/* Accolade */}
+        <div data-reveal style={{ background: COLORS.darkRed, padding: "56px 40px", textAlign: "center" }}>
+          <p style={{ color: COLORS.gold, fontSize: "clamp(18px, 3vw, 22px)", fontStyle: "italic", letterSpacing: "1px", marginBottom: "10px" }}>
+            Rated 4.5 out of 5 &mdash; ranked #3 of 38 restaurants in Kildare
+          </p>
+          <p style={{ color: "rgba(245, 239, 224, 0.75)", fontSize: "13px", letterSpacing: "2px", textTransform: "uppercase" }}>Tripadvisor</p>
         </div>
+
+        {/* Menu */}
+        <section id="menu" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto", textAlign: "center" }}>
+            <p data-reveal style={label(COLORS.darkRed)}>What We Serve</p>
+            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>Our Menu</h2>
+            <p data-reveal style={{ color: "#555", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
+              Thai dishes and European classics, cooked to order.
+            </p>
+            <div data-reveal style={divider} />
+
+            <div className="photo-row" data-stagger>
+              {MENU_PHOTOS.map((photo) => (
+                <figure key={photo.src} className="photo-card" data-reveal>
+                  <Image src={photo.src} alt={photo.alt} width={800} height={600} sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, 260px" />
+                  <figcaption>{photo.caption}</figcaption>
+                </figure>
+              ))}
+            </div>
+
+            <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(230px, 100%), 1fr))", gap: "44px", textAlign: "left" }}>
+              {MENU.map((section) => (
+                <div key={section.category} data-reveal>
+                  <h3 style={{ fontSize: "20px", color: COLORS.darkBlue, marginBottom: "18px", paddingBottom: "12px", borderBottom: `2px solid ${COLORS.darkRed}` }}>
+                    {section.category}
+                  </h3>
+                  <ul style={{ listStyle: "none" }}>
+                    {section.items.map((item) => (
+                      <li key={item} style={{ fontSize: "15px", color: "#1a1a1a", marginBottom: "11px", lineHeight: 1.5 }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Drinks */}
+        <section id="drinks" style={{ padding: "100px 40px", background: COLORS.darkRed }}>
+          <div style={{ maxWidth: "1100px", margin: "0 auto", textAlign: "center" }}>
+            <p data-reveal style={label(COLORS.gold)}>At the Bar</p>
+            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Wine &amp; Spirits</h2>
+            <p data-reveal style={{ color: "rgba(245, 239, 224, 0.8)", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
+              A full bar with wines by the glass or bottle, Irish whiskey and gin, and ten taps.
+            </p>
+            <div data-reveal style={divider} />
+
+            <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", gap: "44px", textAlign: "left" }}>
+              {DRINKS.map((group) => (
+                <div key={group.group} data-reveal>
+                  <h3
+                    style={{
+                      color: COLORS.gold,
+                      fontSize: "14px",
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      marginBottom: "18px",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid rgba(201, 168, 76, 0.4)",
+                    }}
+                  >
+                    {group.group}
+                  </h3>
+                  <ul style={{ listStyle: "none" }}>
+                    {group.items.map((item) => (
+                      <li key={item} style={{ color: COLORS.offWhite, fontSize: "15px", marginBottom: "11px", lineHeight: 1.5 }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pavillion */}
+        <section id="pavillion" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+          <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
+            <div data-reveal style={{ textAlign: "center" }}>
+              <p style={label(COLORS.darkRed)}>Outside</p>
+              <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Pavillion</h2>
+              <p style={{ color: "#555", fontSize: "16px", maxWidth: "580px", margin: "0 auto 28px", lineHeight: 1.8 }}>
+                Our covered outdoor bar &mdash; heated, roofed and open to the garden, whatever the weather is doing.
+              </p>
+              <div style={divider} />
+            </div>
+
+            <div className="split" data-stagger style={{ marginBottom: "60px" }}>
+              <div data-reveal>
+                <p style={{ fontSize: "17px", lineHeight: 1.9, color: "#333", marginBottom: "24px" }}>
+                  Through the etched glass door off the main bar, the Pavillion is Cunninghams&apos; outdoor room: a long space under a painted timber roof, with a
+                  tiled floor and one side open to the greenery. Radiant heaters run the length of the ceiling and there is a stove at the far end, so it stays
+                  just as warm and inviting as inside, regardless of the weather.
+                </p>
+                <p style={{ fontSize: "17px", lineHeight: 1.9, color: "#333" }}>
+                  It is also where the sport goes on. Screens along the walls carry racing, football, rugby and golf, and the walls are hung with racing prints
+                  &mdash; only right, a few miles from the Curragh. Vintage enamel signs, an old wooden propeller and deep buttoned booths fill out the rest.
+                </p>
+              </div>
+              <figure className="split-media" data-reveal>
+                <Image
+                  src="/pavilion-door.webp"
+                  alt="The etched glass door into the Pavillion at Cunninghams, with tables and the timber roof beyond"
+                  width={1024}
+                  height={681}
+                  sizes="(max-width: 820px) 100vw, 560px"
+                />
+              </figure>
+            </div>
+
+            <div
+              data-stagger
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: "18px", textAlign: "center" }}
+            >
+              {PAVILION_PHOTOS.map((photo) => (
+                <figure key={photo.src} className="photo-card" data-reveal>
+                  <Image src={photo.src} alt={photo.alt} width={1024} height={681} sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, 350px" />
+                  <figcaption>{photo.caption}</figcaption>
+                </figure>
+              ))}
+            </div>
+
+            <EventEnquiry />
+          </div>
+        </section>
+
+        {/* Live Music */}
+        <section id="music" style={{ position: "relative", padding: "100px 40px", background: COLORS.darkBlue, overflow: "hidden" }}>
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `url('${ASSETS}/bar-interior.webp') center/cover no-repeat`,
+              opacity: 0.3,
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(5,15,50,0.72), rgba(5,15,50,0.5), rgba(5,15,50,0.82))" }}
+          />
+          <div style={{ position: "relative", maxWidth: "1000px", margin: "0 auto", textAlign: "center" }}>
+            <p data-reveal style={label(COLORS.gold)}>In the Bar</p>
+            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Live Music</h2>
+            <p data-reveal style={{ color: "rgba(245, 239, 224, 0.8)", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
+              A lively crowd of local trad musicians gather in the bar to entertain several nights a week.
+            </p>
+            <div data-reveal style={divider} />
+            <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "24px" }}>
+              {MUSIC.map((night) => (
+                <div
+                  key={night.day}
+                  data-reveal
+                  style={{
+                    border: "1px solid rgba(201, 168, 76, 0.3)",
+                    background: "rgba(5, 15, 50, 0.55)",
+                    backdropFilter: "blur(3px)",
+                    padding: "32px 24px",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "12px" }}>{night.day}</p>
+                  <h3 style={{ color: COLORS.offWhite, fontSize: "22px", fontWeight: 300, marginBottom: "12px" }}>{night.act}</h3>
+                  <p style={{ color: "rgba(245, 239, 224, 0.65)", fontSize: "14px", lineHeight: 1.7 }}>{night.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Rooms */}
+        <section id="rooms" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+          <div style={{ maxWidth: "1120px", margin: "0 auto", textAlign: "center" }}>
+            <p data-reveal style={label(COLORS.darkRed)}>Stay With Us</p>
+            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Rooms at Cunninghams</h2>
+            <p data-reveal style={{ color: "#555", fontSize: "16px", maxWidth: "600px", margin: "0 auto 28px", lineHeight: 1.8 }}>
+              Ten boutique adults-only rooms in the heart of Kildare Town &mdash; minutes from Kildare Village and a short drive from the Curragh Racecourse.
+            </p>
+            <div data-reveal style={divider} />
+            <div className="split" data-stagger style={{ marginBottom: "48px" }}>
+              <figure className="split-media" data-reveal>
+                <Image
+                  src="/bedroom.webp"
+                  alt="A guest room at Cunninghams with a buttoned headboard, crisp white bedding, linen cushions and a turned bedside lamp"
+                  width={720}
+                  height={900}
+                  sizes="(max-width: 820px) 100vw, 560px"
+                />
+              </figure>
+              <div data-reveal style={{ display: "grid", gap: "18px", textAlign: "left" }}>
+                {ROOM_FEATURES.map((feature) => (
+                  <div key={feature} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                    <span style={{ color: COLORS.gold, fontWeight: 700, lineHeight: 1.6 }}>&mdash;</span>
+                    <span style={{ color: "#333", fontSize: "15px", lineHeight: 1.6 }}>{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <a
+              href={ROOMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-reveal
+              style={{
+                display: "inline-block",
+                padding: "14px 40px",
+                background: COLORS.darkRed,
+                color: COLORS.offWhite,
+                textDecoration: "none",
+                letterSpacing: "2px",
+                fontSize: "13px",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                transition: "background 0.3s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#8A1C1C")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = COLORS.darkRed)}
+            >
+              Book a Room
+            </a>
+          </div>
+        </section>
+
+        {/* Opening Hours */}
+        <section id="hours" style={{ padding: "100px 40px", background: COLORS.darkRed }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
+            <p data-reveal style={label(COLORS.gold)}>When to Find Us</p>
+            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "16px", color: COLORS.offWhite }}>Opening Hours</h2>
+            <div data-reveal style={divider} />
+            <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "56px", textAlign: "left" }}>
+              {[
+                { title: "The Bar", rows: BAR_HOURS },
+                { title: "The Kitchen", rows: KITCHEN_HOURS },
+              ].map((table) => (
+                <div key={table.title} data-reveal>
+                  <h3
+                    style={{
+                      color: COLORS.gold,
+                      fontSize: "14px",
+                      letterSpacing: "3px",
+                      textTransform: "uppercase",
+                      marginBottom: "20px",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid rgba(201, 168, 76, 0.4)",
+                    }}
+                  >
+                    {table.title}
+                  </h3>
+                  {table.rows.map((row) => (
+                    <div
+                      key={row.days}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "16px",
+                        padding: "14px 0",
+                        borderBottom: "1px solid rgba(201, 168, 76, 0.18)",
+                        fontSize: "16px",
+                      }}
+                    >
+                      <span style={{ color: COLORS.offWhite }}>{row.days}</span>
+                      <span style={{ color: COLORS.gold, fontWeight: 700, whiteSpace: "nowrap" }}>{row.hours}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <p data-reveal style={{ color: "rgba(245, 239, 224, 0.7)", fontSize: "14px", marginTop: "36px", lineHeight: 1.7 }}>
+              The kitchen closes earlier than the bar. Please call{" "}
+              <a href="tel:+35345521780" style={{ color: COLORS.gold, textDecoration: "none", borderBottom: "1px solid rgba(201, 168, 76, 0.4)" }}>
+                (045) 521 780
+              </a>{" "}
+              to confirm food service times.
+            </p>
+          </div>
+        </section>
+
+        {/* Contact */}
+        <section id="contact" style={{ background: COLORS.darkBlue, padding: "100px 40px", textAlign: "center" }}>
+          <p data-reveal style={label(COLORS.gold)}>Get In Touch</p>
+          <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, color: COLORS.offWhite, marginBottom: "16px" }}>Find Us</h2>
+          <div data-reveal style={divider} />
+          <div data-stagger style={{ display: "flex", justifyContent: "center", gap: "72px", flexWrap: "wrap", marginBottom: "56px" }}>
+            <div data-reveal>
+              <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>Address</p>
+              <p style={{ color: COLORS.offWhite, lineHeight: 1.8 }}>
+                1 Castle Wall
+                <br />
+                Market Square
+                <br />
+                Kildare R51 TW80
+                <br />
+                County Kildare
+              </p>
+            </div>
+            <div data-reveal>
+              <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>Phone</p>
+              <a href="tel:+35345521780" style={{ color: COLORS.offWhite, lineHeight: 1.8, textDecoration: "none" }}>
+                (045) 521 780
+              </a>
+            </div>
+            <div data-reveal>
+              <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>Email</p>
+              <a href="mailto:info@cunninghamskildare.com" style={{ color: COLORS.offWhite, lineHeight: 1.8, textDecoration: "none" }}>
+                info@cunninghamskildare.com
+              </a>
+            </div>
+          </div>
+          <div data-reveal style={{ display: "flex", justifyContent: "center", gap: "28px", flexWrap: "wrap" }}>
+            {[
+              { label: "Facebook", url: "https://www.facebook.com/cunninghams.bar" },
+              { label: "Instagram", url: "https://www.instagram.com/cunninghams_bar" },
+            ].map((social) => (
+              <a
+                key={social.label}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: COLORS.gold,
+                  fontSize: "13px",
+                  letterSpacing: "2px",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  borderBottom: "1px solid rgba(201, 168, 76, 0.4)",
+                  paddingBottom: "3px",
+                }}
+              >
+                {social.label}
+              </a>
+            ))}
+          </div>
+        </section>
       </main>
-    </div>
+
+      <footer style={{ background: "#020818", padding: "24px 40px", textAlign: "center" }}>
+        <p style={{ color: "rgba(245, 239, 224, 0.5)", fontSize: "13px" }}>
+          © {new Date().getFullYear()} Cunninghams, Market Square, Kildare. All rights reserved.
+        </p>
+      </footer>
+    </>
   );
 }
