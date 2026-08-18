@@ -24,7 +24,10 @@ const ROOMS_URL = "https://www.booking.com/hotel/ie/cunningham-39-s-guesthouse.h
 const ENQUIRY_EMAIL = "info@cunninghamskildare.com";
 const PHONE_DISPLAY = "(045) 521 780";
 
-const NAV_ITEMS = ["About", "Video", "Menu", "Drinks", "Pavillion", "Music", "Rooms", "Hours", "Contact"];
+// Drinks is deliberately absent: it is the section directly below Menu, so one link covers
+// both and the nav loses a row on the narrow screens where every row is fixed overhead. The
+// #drinks section keeps its id and stays linkable.
+const NAV_ITEMS = ["About", "Video", "Menu", "Pavillion", "Music", "Rooms", "Hours", "Contact"];
 
 const PAVILION_PHOTOS = [
   {
@@ -825,7 +828,7 @@ export default function Home() {
         {/* Accolade */}
         <div data-reveal style={{ background: COLORS.darkRed, padding: "56px 40px", textAlign: "center" }}>
           <p style={{ color: COLORS.gold, fontSize: "clamp(18px, 3vw, 22px)", fontStyle: "italic", letterSpacing: "1px", marginBottom: "10px" }}>
-            Rated 4.5 out of 5 &mdash; ranked #3 of 38 restaurants in Kildare
+            Rated 4.5 out of 5 &mdash; ranked #3 of 46 restaurants in Kildare
           </p>
           <p style={{ color: "rgba(245, 239, 224, 0.75)", fontSize: "13px", letterSpacing: "2px", textTransform: "uppercase" }}>Tripadvisor</p>
         </div>
@@ -1118,11 +1121,9 @@ export default function Home() {
             <div data-reveal>
               <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>Address</p>
               <p style={{ color: COLORS.offWhite, lineHeight: 1.8 }}>
-                1 Castle Wall
-                <br />
                 Market Square
                 <br />
-                Kildare R51 TW80
+                Kildare R51 FA07
                 <br />
                 County Kildare
               </p>

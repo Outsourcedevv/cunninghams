@@ -26,10 +26,10 @@ const localBusinessSchema = {
   description: "Award winning gastro pub, supper clubs and rooms in Kildare Town.",
   address: {
     "@type": "PostalAddress",
-    streetAddress: "1 Castle Wall, Market Square",
+    streetAddress: "Market Square",
     addressLocality: "Kildare",
     addressRegion: "County Kildare",
-    postalCode: "R51 TW80",
+    postalCode: "R51 FA07",
     addressCountry: "IE",
   },
   telephone: "+353-45-521780",

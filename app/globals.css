@@ -242,7 +242,7 @@ a:focus-visible {
   }
 }
 
-/* The nav holds a wordmark, nine links and the booking button. Below 1320px they stop
+/* The nav holds a wordmark, eight links and the booking button. Below 1320px they stop
    fitting comfortably on one row, and below 1150px they do not fit at all — the button
    was being pushed off the right edge. There it wraps: wordmark and button share the top
    row, links drop underneath. Keeping the button beside the wordmark rather than giving
