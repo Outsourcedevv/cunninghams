@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 declare global {
   interface Window {
     __revealFailsafe?: ReturnType<typeof setTimeout>;
+    __dropRevealGate?: () => void;
   }
 }
 
@@ -535,13 +536,10 @@ function EventEnquiry() {
 
 function useScrollReveal() {
   useEffect(() => {
-    const root = document.documentElement;
     // The head script hid the sections and armed a timer to un-hide them if this never ran.
     // It did run, so the timer is not needed — but a failure from here on has to un-hide too.
     clearTimeout(window.__revealFailsafe);
-    const revealAll = () => {
-      root.classList.remove("js-reveal");
-    };
+    const revealAll = () => window.__dropRevealGate?.();
 
     const targets = Array.from(document.querySelectorAll("[data-reveal]"));
     if (!targets.length || !("IntersectionObserver" in window)) {

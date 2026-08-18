@@ -30,37 +30,35 @@ a:focus-visible {
 /* Scroll reveal. Skipped for visitors who ask for reduced motion.
 
    Everything below the hero carries data-reveal, so hiding it is only ever safe when the
-   script that un-hides it is definitely running: the .js-reveal gate is added by the head
+   script that un-hides it is definitely running: the gate is added by the head
    script in layout.tsx and dropped again if the reveal never happens. Without that gate a
    blocked bundle, a failed hydration or a throttled observer left the whole page as bare
    section colours. Hidden elements keep their layout box, so revealing them shifts nothing. */
 @media (prefers-reduced-motion: no-preference) {
-  .js-reveal [data-reveal] {
-    opacity: 0;
-    transform: translateY(28px);
+  [data-reveal] {
     transition:
       opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1),
       transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
   }
 
-  .js-reveal [data-reveal].is-visible {
+  [data-reveal].is-visible {
     opacity: 1;
     transform: none;
   }
 
-  .js-reveal [data-stagger] > [data-reveal]:nth-child(2) {
+  [data-stagger] > [data-reveal]:nth-child(2) {
     transition-delay: 90ms;
   }
-  .js-reveal [data-stagger] > [data-reveal]:nth-child(3) {
+  [data-stagger] > [data-reveal]:nth-child(3) {
     transition-delay: 180ms;
   }
-  .js-reveal [data-stagger] > [data-reveal]:nth-child(4) {
+  [data-stagger] > [data-reveal]:nth-child(4) {
     transition-delay: 270ms;
   }
-  .js-reveal [data-stagger] > [data-reveal]:nth-child(5) {
+  [data-stagger] > [data-reveal]:nth-child(5) {
     transition-delay: 360ms;
   }
-  .js-reveal [data-stagger] > [data-reveal]:nth-child(6) {
+  [data-stagger] > [data-reveal]:nth-child(6) {
     transition-delay: 450ms;
   }
 }
