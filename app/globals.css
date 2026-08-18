@@ -211,8 +211,8 @@ a:focus-visible {
   padding: 0 24px;
 }
 
-/* Fixed aspect so the portrait footage is never cropped. The size lives on the cell rather
-   than the video because the cell also positions the tap-to-play control over it. */
+/* Fixed aspect so the portrait footage is never cropped. The size lives on the cell so the
+   video can simply fill it, poster included. */
 .video-cell {
   position: relative;
   display: block;
@@ -224,32 +224,6 @@ a:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
-}
-
-/* Only rendered once a phone has actually refused to autoplay, so it is the one thing
-   standing between the visitor and a black rectangle — it sits above the player and is
-   sized for a thumb rather than a cursor. */
-.video-tap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 14px 26px;
-  border: 1px solid #c9a84c;
-  background: rgba(5, 15, 50, 0.72);
-  color: #c9a84c;
-  font-family: inherit;
-  font-size: 13px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-
-.video-tap:hover {
-  background: rgba(5, 15, 50, 0.88);
-  color: #e0c06a;
 }
 
 @media (max-width: 1100px) {

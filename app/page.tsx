@@ -147,7 +147,13 @@ const SIGN_FONT = "var(--font-sign), Georgia, serif";
 // so these two need it applied by hand or they 404 wherever the site is not at the root.
 const ASSETS = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-const VIDEOS = ["/dining-room.mp4", "/kitchen.mp4", "/sunday-roast.mp4", "/rooms.mp4"].map((file) => `${ASSETS}${file}`);
+// Each clip is paired with a still lifted from its own footage, so a player that has not
+// decoded a frame yet shows the room rather than the section colour behind it. Both paths
+// take the prefix by hand for the same reason: a plain <video> tag never gets basePath.
+const VIDEOS = ["dining-room", "kitchen", "sunday-roast", "rooms"].map((name) => ({
+  src: `${ASSETS}/${name}.mp4`,
+  poster: `${ASSETS}/${name}-poster.webp`,
+}));
 
 const MENU_PHOTOS = [
   { src: "/menu-charcoal.webp", caption: "Above the Charcoal", alt: "Beef burger with melted cheese and crispy onions, served with a bowl of chunky chips" },
@@ -158,45 +164,29 @@ const MENU_PHOTOS = [
 
 function VenueVideo() {
   const frameRef = useRef<HTMLDivElement>(null);
-  // Phones refuse muted autoplay outright in iOS Low Power Mode and Android data saver, and
-  // there is no way to detect either up front — play() simply rejects. Until it does, the
-  // players stay decoration; once it has, they need a real control or the section is dead.
-  const [needsTap, setNeedsTap] = useState(false);
-
-  // A phone will only honour play() inside the gesture that asked for it, so the tap has to
-  // reach every player synchronously — one tap starts the section rather than just one clip.
-  const playAll = () => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const started = Array.from(frame.querySelectorAll("video"))
-      .filter((player) => player.offsetParent)
-      .map((player) => {
-        player.muted = true;
-        return player.play();
-      });
-
-    Promise.allSettled(started).then((results) => {
-      if (results.some((result) => result.status === "fulfilled")) setNeedsTap(false);
-    });
-  };
-
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
     const players = Array.from(frame.querySelectorAll("video"));
 
-    // React omits the muted attribute from prerendered HTML; without it autoplay is blocked
+    // Set defensively: the attribute is in the markup, but a muted player is the whole
+    // basis on which a phone allows autoplay at all, so it is not left to chance.
     players.forEach((player) => {
       player.muted = true;
     });
 
     const onScreen = new Set<HTMLVideoElement>();
+
     const start = (player: HTMLVideoElement) => {
       // The blurred backdrop is dropped on phones to save a decode, and a display:none
       // player can never play — asking anyway would report a false autoplay refusal.
-      if (!onScreen.has(player) || !player.offsetParent) return;
-      player.play().catch(() => setNeedsTap(true));
+      if (!onScreen.has(player) || !player.offsetParent || !player.paused) return;
+      // A refusal needs no handling: the player keeps showing its poster, which is a still
+      // from the clip itself, and the listeners below retry on the next gesture.
+      player.play().catch(() => {});
     };
+
+    const startAll = () => players.forEach(start);
 
     let delivered = false;
 
@@ -216,30 +206,55 @@ function VenueVideo() {
           }
         });
       },
-      { threshold: 0.1 },
+      // Starts a screenful early so that on a phone — where the players stack and are met
+      // one at a time — a clip is already running by the time it is scrolled into view.
+      { threshold: 0, rootMargin: "200px 0px 200px 0px" },
     );
 
     // Same throttling trap as the scroll reveal: a mobile browser that stops delivering
-    // these callbacks would leave every player parked on a black frame forever. Falling
-    // back to playing the lot beats showing nothing; off-screen ones pause on the next scroll.
+    // these callbacks would leave every player parked on its poster forever. Falling back
+    // to playing the lot beats showing nothing; off-screen ones pause on the next scroll.
     const watchdog = setTimeout(() => {
       if (delivered) return;
-      players.forEach((player) => {
-        onScreen.add(player);
-        start(player);
-      });
+      players.forEach((player) => onScreen.add(player));
+      startAll();
     }, 1000);
+
+    // A phone that refused autoplay will honour the next genuine gesture, and scrolling
+    // down to the videos is itself a gesture — so playback starts on its own rather than
+    // waiting for the visitor to find a button.
+    const unlock = () => {
+      players.forEach((player) => {
+        player.muted = true;
+      });
+      startAll();
+    };
+    document.addEventListener("touchstart", unlock, { passive: true });
+    document.addEventListener("pointerdown", unlock, { passive: true });
+
+    // iOS pauses media when the app is backgrounded, and leaves it paused on return.
+    const onVisible = () => {
+      if (!document.hidden) startAll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     const retry = (event: Event) => start(event.currentTarget as HTMLVideoElement);
     players.forEach((player) => {
       observer.observe(player);
+      player.addEventListener("loadeddata", retry);
       player.addEventListener("canplay", retry);
     });
 
     return () => {
       clearTimeout(watchdog);
       observer.disconnect();
-      players.forEach((player) => player.removeEventListener("canplay", retry));
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("visibilitychange", onVisible);
+      players.forEach((player) => {
+        player.removeEventListener("loadeddata", retry);
+        player.removeEventListener("canplay", retry);
+      });
     };
   }, []);
 
@@ -274,6 +289,7 @@ function VenueVideo() {
           aria-hidden="true"
           tabIndex={-1}
           className="video-backdrop"
+          poster={VIDEOS[0].poster}
           style={{
             position: "absolute",
             inset: 0,
@@ -285,12 +301,12 @@ function VenueVideo() {
             pointerEvents: "none",
           }}
         >
-          <source src={VIDEOS[0]} type="video/mp4" />
+          <source src={VIDEOS[0].src} type="video/mp4" />
         </video>
 
         <div className="video-row">
-          {VIDEOS.map((src) => (
-            <div key={src} className="video-cell">
+          {VIDEOS.map((video) => (
+            <div key={video.src} className="video-cell">
               <video
                 autoPlay
                 muted
@@ -298,16 +314,12 @@ function VenueVideo() {
                 playsInline
                 preload="auto"
                 className="video-player"
+                poster={video.poster}
                 style={{ objectFit: "cover", boxShadow: "0 0 70px rgba(0, 0, 0, 0.65)", pointerEvents: "none" }}
               >
-                <source src={src} type="video/mp4" />
+                <source src={video.src} type="video/mp4" />
                 Your browser does not support video playback.
               </video>
-              {needsTap ? (
-                <button type="button" className="video-tap" onClick={playAll} aria-label="Play videos">
-                  <span aria-hidden="true">▶</span> Play
-                </button>
-              ) : null}
             </div>
           ))}
         </div>
