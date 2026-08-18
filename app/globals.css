@@ -74,9 +74,17 @@ a:focus-visible {
   gap: 30px;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .nav-book {
   flex-shrink: 0;
   padding: 9px 22px;
+  border: 1px solid transparent;
   background: #c9a84c;
   color: #050f32;
   text-decoration: none;
@@ -90,6 +98,18 @@ a:focus-visible {
 
 .nav-book:hover {
   background: #e0c06a;
+}
+
+/* Rooms, the secondary booking. Outlined so it reads as the quieter of the two. */
+.nav-book.is-secondary {
+  background: transparent;
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+
+.nav-book.is-secondary:hover {
+  background: rgba(201, 168, 76, 0.16);
+  color: #e0c06a;
 }
 
 .split {
@@ -292,6 +312,19 @@ a:focus-visible {
     padding: 8px 10px;
     font-size: 10px;
     letter-spacing: 0.3px;
+  }
+  .nav-actions {
+    gap: 8px;
+  }
+}
+
+/* The wordmark measures 216px, which is more than both booking buttons together, and while
+   it is on screen they cannot share its row — they drop to one of their own and the fixed
+   nav grows by ~44px. Hidden up to the width where all three genuinely fit, so the logo
+   alone carries the top bar on phones and the hero underneath says the name in full. */
+@media (max-width: 540px) {
+  .nav-wordmark {
+    display: none;
   }
 }
 

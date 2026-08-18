@@ -654,7 +654,7 @@ export default function Home() {
               preload
               style={{ borderRadius: "50%", border: `1px solid ${COLORS.gold}`, flexShrink: 0 }}
             />
-            CUNNINGHAMS
+            <span className="nav-wordmark">CUNNINGHAMS</span>
           </a>
           <div className="nav-links">
             {NAV_ITEMS.map((item) => (
@@ -676,9 +676,16 @@ export default function Home() {
               </a>
             ))}
           </div>
-          <a className="nav-book" href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-            Book a Table
-          </a>
+          {/* Rooms is the secondary of the two, so it is outlined rather than filled: two solid
+              gold blocks side by side compete, and the nav has little enough room as it is. */}
+          <div className="nav-actions">
+            <a className="nav-book is-secondary" href={ROOMS_URL} target="_blank" rel="noopener noreferrer">
+              Book a Room
+            </a>
+            <a className="nav-book" href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
+              Book a Table
+            </a>
+          </div>
         </nav>
       </header>
 
