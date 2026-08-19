@@ -22,9 +22,33 @@ section[id] {
   scroll-margin-top: calc(var(--nav-height, 84px) + 12px);
 }
 
-a:focus-visible {
+a:focus-visible,
+button:focus-visible {
   outline: 2px solid #c9a84c;
   outline-offset: 3px;
+}
+
+/* Offscreen until tabbed to, then the first stop on the page — the alternative is tabbing
+   through ten nav items before reaching any content. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 200;
+  padding: 12px 18px;
+  background: #c9a84c;
+  color: #050f32;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 /* Scroll reveal. Skipped for visitors who ask for reduced motion.
@@ -67,6 +91,10 @@ a:focus-visible {
    An inline style would win over every media query. */
 .site-nav {
   padding: 16px 40px;
+}
+
+.nav-brand {
+  gap: 12px;
 }
 
 .nav-links {
@@ -276,25 +304,99 @@ a:focus-visible {
   }
 }
 
+/* The menu button only makes sense once something can open it, so it is hidden until the
+   head script proves scripts are running. Without them the links stay in the bar as before. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(201, 168, 76, 0.55);
+  background: transparent;
+  color: #c9a84c;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nav-toggle-bars {
+  display: block;
+  position: relative;
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+}
+
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.nav-toggle-bars::before {
+  top: -5px;
+}
+.nav-toggle-bars::after {
+  top: 5px;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars {
+  background: transparent;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+  transform: translateY(5px) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
 @media (max-width: 1150px) {
   .site-nav {
     flex-wrap: wrap;
     gap: 10px;
     padding: 12px 20px;
   }
+  /* Opened, the links are a proper list rather than a cramped wrap: full width rows with
+     tap targets a thumb can actually hit. */
   .nav-links {
     order: 3;
     flex-basis: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 4px;
+    border-top: 1px solid rgba(201, 168, 76, 0.22);
   }
   .nav-links a {
-    font-size: 12px;
+    padding: 15px 2px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  }
+  /* Touch widths, so both controls get a target a thumb can hit rather than the 24-33px
+     they collapse to on padding alone. 44px is the floor Apple and WCAG both land on. */
+  .nav-book,
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
   }
   .nav-book {
     padding: 8px 16px;
     font-size: 11px;
     letter-spacing: 1px;
+  }
+  .nav-toggle {
+    min-width: 44px;
   }
   section[id] {
     scroll-margin-top: calc(var(--nav-height, 200px) + 12px);
@@ -318,12 +420,66 @@ a:focus-visible {
   }
 }
 
-/* The wordmark measures 216px, which is more than both booking buttons together, and while
-   it is on screen they cannot share its row — they drop to one of their own and the fixed
-   nav grows by ~44px. Hidden up to the width where all three genuinely fit, so the logo
-   alone carries the top bar on phones and the hero underneath says the name in full. */
+/* Wordmark, logo and two booking buttons will not share a row below 540px: there is 351px
+   to spend at 375px and the buttons take 218px of it. The name is the part worth keeping, so
+   the logo mark gives up its 50px instead and the name shrinks to fit what is left. */
 @media (max-width: 540px) {
+  /* The menu button freed the row, so the logo comes back — smaller, and closer to the
+     name, because the two booking buttons and the toggle still need their share. */
+  .nav-logo {
+    width: 32px;
+    height: 32px;
+  }
+  .nav-brand {
+    gap: 8px;
+  }
   .nav-wordmark {
+    font-size: 15px;
+    letter-spacing: 0;
+  }
+  /* The bars alone are understood as a menu; the word costs 45px that the name needs. */
+  .nav-toggle-text {
+    display: none;
+  }
+  .nav-toggle {
+    padding: 10px 11px;
+  }
+  .nav-book-verb {
+    display: none;
+  }
+}
+
+/* A 360px Android is the common narrow case and the row misses by three pixels there, which
+   costs a whole extra bar. Everything gives a little rather than one thing giving a lot. */
+@media (max-width: 400px) {
+  /* The row misses by a few pixels on a 360px Android, which costs a whole extra bar. The
+     nav's own gap counts too — brand and actions are flex items with 10px between them. */
+  .site-nav {
+    padding: 12px 10px;
+    gap: 6px;
+  }
+  .nav-logo {
+    width: 28px;
+    height: 28px;
+  }
+  .nav-brand {
+    gap: 6px;
+  }
+  .nav-wordmark {
+    font-size: 14px;
+  }
+  .nav-actions {
+    gap: 6px;
+  }
+  .nav-book {
+    padding: 8px 9px;
+  }
+}
+
+/* Below this the row genuinely cannot hold all four, so the logo steps aside again — the
+   name is the part worth keeping. Affects a 320px iPhone SE and little else. */
+@media (max-width: 340px) {
+  .nav-logo {
     display: none;
   }
 }

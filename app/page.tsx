@@ -22,6 +22,28 @@ const COLORS = {
 const BOOKING_URL = "https://dishcult.com/restaurant/cunninghamsbar?sortOrder=0&page=1";
 const ROOMS_URL = "https://www.booking.com/hotel/ie/cunningham-39-s-guesthouse.html";
 const ENQUIRY_EMAIL = "info@cunninghamskildare.com";
+const DIRECTIONS_URL = "https://www.google.com/maps/search/?api=1&query=Cunninghams%20Bar%20Market%20Square%20Kildare%20R51%20FA07";
+
+const REVIEW_SOURCES: { name: string; rating?: number; detail: string; url: string }[] = [
+  {
+    name: "Google",
+    rating: 4.7,
+    detail: "The largest pool of reviews, and the one most people check first.",
+    url: "https://www.google.com/maps/search/?api=1&query=Cunninghams%20Bar%20Market%20Square%20Kildare",
+  },
+  {
+    name: "Tripadvisor",
+    rating: 4.5,
+    detail: "Where the ranking comes from, with the full history of visits.",
+    url: "https://www.tripadvisor.ie/Restaurant_Review-g656612-d5308481-Reviews-Cunninghams_Bar-Kildare_County_Kildare.html",
+  },
+  {
+    name: "Dish Cult",
+    rating: 4.9,
+    detail: "Diners who booked through Dish Cult, where you can reserve a table too.",
+    url: BOOKING_URL,
+  },
+];
 const PHONE_DISPLAY = "(045) 521 780";
 
 // Drinks is deliberately absent: it is the section directly below Menu, so one link covers
@@ -73,18 +95,86 @@ const FULL_STORY = [
   },
 ];
 
-const MENU = [
+// Transcribed from the dine-in menu card, prices included. The card writes them without a
+// currency symbol and to one decimal (9.5), which is fine on a table but not on a page, so
+// they are set here as euro to two places. Nothing is inferred: dishes priced by the protein
+// you choose carry the choice as a note instead of a price, exactly as the card does.
+const MENU: { category: string; note?: string; items: { name: string; price?: string; desc?: string }[] }[] = [
   {
-    category: "Starters",
-    items: ["Prawn Crackers", "Soup", "Spring Rolls", "Prawn Toast", "Chicken Satay", "Wings", "Salt & Pepper Squid", "Crispy Duck Pancakes", "Mixed Platter"],
+    category: "To Start / Soups",
+    items: [
+      { name: "Spring Rolls", price: "€9.50 veg · €11.50 duck", desc: "We hand roll our Spring Rolls." },
+      { name: "Spicy Chicken or Prawn Broth", price: "€9.50", desc: "A kick of Thai herbs and spices." },
+      { name: "Crispy Won Tons", price: "€9.50", desc: "Freshly made won tons with a chicken filling." },
+      { name: "Chicken Satay", price: "€10.00", desc: "Marinated chicken served with peanut sauce." },
+      { name: "Buffalo Wings", price: "€11.50", desc: "Crisp fried wings lightly coated in hot sauce, served with a blue cheese dip." },
+      { name: "Seafood Chowder", price: "€10.50", desc: "The goodness of the sea, select vegetables with the richness of cream." },
+      { name: "Butterfly Prawns", price: "€11.50", desc: "Fresh prawns in a crisp panko crumb with our own recipe chilli jam." },
+      { name: "Blackbean Ribs", price: "€11.50", desc: "Marinated in black bean sauce and slow cooked." },
+      { name: "Mixed Starter for Two", price: "€19.00", desc: "Chef's selection." },
+    ],
   },
-  { category: "Salads", items: ["Chicken & Mango", "Vietnamese Prawn", "Thai Beef"] },
-  { category: "Above the Charcoal", items: ["Charcoal Chicken", "BBQ Ribs", "Half Roasted Duck", "Sirloin", "Rib Eye"] },
-  { category: "Fish", items: ["Salt & Pepper Prawns", "King Prawn Tempura", "Steamed Salmon", "Sea Bass", "Whole Sea Bream"] },
-  { category: "From the Wok", items: ["Vegetable Stir Fry", "Nasi Goreng", "Sweet & Sour Pork", "Kung Pao Chicken", "Beef Black Bean"] },
-  { category: "Oodles of Noodles", items: ["Chow Mein", "Singapore Noodles", "Pad Thai", "Beef Ho Fun", "Laksa"] },
-  { category: "Curries", items: ["Yellow", "Red", "Thai Green", "Panang", "Massaman"] },
-  { category: "Sides", items: ["Boiled Rice", "Egg Noodles", "Fried Rice", "Home Cut Fries"] },
+  {
+    category: "Salads",
+    note: "Starter / main",
+    items: [
+      { name: "Duck / Prawn Noodle Salad", price: "€11.50 / €21.00", desc: "Fresh garden salads above wok fried noodles." },
+      { name: "Caesar Salad with Chicken", price: "€10.50 / €20.00", desc: "Drizzled with our homemade dressing." },
+      { name: "Chicken Cashew", price: "€10.50 / €20.00", desc: "Served in our sweet and nutty dressing." },
+    ],
+  },
+  {
+    category: "Above the Charcoal",
+    items: [
+      { name: "10oz Rib Eye", price: "€33.00", desc: "Prime dry aged rib eye. Butterfly prawns add €7. Choice of pepper, red wine or garlic butter sauce." },
+      { name: "The Beef Burger", price: "€20.50", desc: "Homemade 100% Irish beef burger with crispy onions." },
+      { name: "Half Crispy Duck", price: "€25.50", desc: "With a tamarind jus. Noodles recommended." },
+      { name: "Chargrilled Chicken Fillet", price: "€21.50", desc: "Served with a fresh garden salad topped with a poached egg." },
+      { name: "Cajun Fillet Burger", price: "€20.50", desc: "Marinated in cajun spices, charcoal grilled, stacked on a floury bap." },
+    ],
+  },
+  {
+    category: "Gone Fishing",
+    items: [
+      { name: "Fillet Sea Bass", price: "€23.00", desc: "Pan fried and served with wok fried veg and a side of your choice." },
+      { name: "Beer Battered Cod", price: "€22.00", desc: "Served with home cut fries, side salad and home recipe tartare sauce." },
+      { name: "Chicken / King Prawn Tagliatelle", price: "€21.00 / €23.00", desc: "Sautéed with garlic, shallots, white wine and basil reduction." },
+      { name: "Cod and Ginger", price: "€23.00", desc: "Fresh battered cod, wok fried veggies, crisp fried ginger and chilli sauce." },
+      { name: "Healthy Option", price: "€23.00", desc: "Wok fried market veggies, fresh prawns and chilli infused grilled cod." },
+    ],
+  },
+  {
+    category: "From the Wok",
+    items: [
+      { name: "Chicken and Cashew", price: "€22.00", desc: "Lightly fried chicken in a soy, garlic, vegetable and cashew sauce." },
+      { name: "Nasi Goreng", price: "€21.00", desc: "Rice with chicken, shrimp, peppers, shallots and garlic, topped with a fried egg and a side of chicken on a stick." },
+      { name: "Chilli and Basil Chicken", price: "€22.00", desc: "Birds eye chillis, onions, peppers and green beans, finished with basil." },
+      { name: "Bangkok Beef", price: "€24.50", desc: "Marinated Irish fillet beef with garlic and chilli reduction." },
+      { name: "Fillet Beef Black Pepper", price: "€25.00", desc: "Wok fried with onions and mushrooms in our own black pepper sauce." },
+    ],
+  },
+  {
+    category: "Oodles of Noodles",
+    note: "Chicken €22 · beef or duck €24.50 · prawns €25.50 · combo €25.50 · vegetarian €18.50",
+    items: [
+      { name: "Pad Thai", desc: "Rice noodles, thai spices blended in a tangy sauce." },
+      { name: "Spicy Noodles", desc: "Fine thread noodles, stir fried with veggies and our own chilli paste." },
+      { name: "Phuket Noodles", desc: "Egg noodles, crispy veggies and our own recipe satay and curry blend sauce." },
+      { name: "Koy Soy", price: "€23.00", desc: "Crisp fried chicken, crunchy veggies and egg noodles in our curry sauce." },
+      { name: "Won Ton Pad Thai", price: "€23.00", desc: "A twist on our favourite street food with the addition of crispy won tons." },
+    ],
+  },
+  {
+    category: "The Curry Station",
+    note: "Chicken €22 · fillet beef €24.50 · duck €24.50 · prawns €25.50 · combo €25.50 · vegetarian €18.50. Sides: boiled rice, fried rice, home cut fries or egg noodles",
+    items: [
+      { name: "Massaman", desc: "Mild, with peanuts and potatoes." },
+      { name: "Green", desc: "Mild, with thai herbs, green chillies and coconut milk." },
+      { name: "Red", desc: "Hot, with thai herbs, red chillies and coconut milk." },
+      { name: "Panaeng", desc: "Fiery hot curry with coconut milk, topped with peanuts and fried shallots." },
+      { name: "Duck", desc: "Succulent duck breast combined with fruity pineapple and red grapes in a creamy red curry." },
+    ],
+  },
 ];
 
 const DRINKS = [
@@ -265,7 +355,7 @@ function VenueVideo() {
     <section id="video" style={{ background: COLORS.darkBlue, padding: "100px 0" }}>
       <div data-reveal style={{ textAlign: "center", padding: "0 40px" }}>
         <p style={label(COLORS.gold)}>Take a Look</p>
-        <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Inside Cunninghams</h2>
+        <h2 style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Inside Cunninghams</h2>
         <div style={divider} />
       </div>
 
@@ -329,6 +419,90 @@ function VenueVideo() {
       </div>
 
     </section>
+  );
+}
+
+function Stars({ rating, size = "15px" }: { rating: number; size?: string }) {
+  return (
+    <span role="img" aria-label={`${rating} out of 5`} style={{ position: "relative", display: "inline-block", lineHeight: 1, whiteSpace: "nowrap", fontSize: size }}>
+      <span aria-hidden="true" style={{ color: "rgba(245, 239, 224, 0.3)" }}>★★★★★</span>
+      <span
+        aria-hidden="true"
+        style={{ position: "absolute", left: 0, top: 0, width: `${(rating / 5) * 100}%`, overflow: "hidden", color: COLORS.gold }}
+      >
+        ★★★★★
+      </span>
+    </span>
+  );
+}
+
+function MoreReviews() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ marginTop: "26px" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="more-reviews"
+        style={{
+          font: "inherit",
+          padding: "12px 30px",
+          minHeight: "44px",
+          border: `1px solid ${COLORS.gold}`,
+          background: "transparent",
+          color: COLORS.gold,
+          fontSize: "12px",
+          letterSpacing: "2px",
+          textTransform: "uppercase",
+          cursor: "pointer",
+        }}
+      >
+        {open ? "Hide reviews" : "See more reviews"}
+      </button>
+
+      <div
+        id="more-reviews"
+        style={{
+          display: open ? "grid" : "none",
+          gap: "14px",
+          maxWidth: "820px",
+          margin: "26px auto 0",
+          textAlign: "left",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        }}
+      >
+        {REVIEW_SOURCES.map((source) => (
+          <a
+            key={source.name}
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "block",
+              padding: "20px",
+              border: "1px solid rgba(201, 168, 76, 0.45)",
+              background: "rgba(5, 15, 50, 0.22)",
+              color: COLORS.offWhite,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ color: COLORS.gold, fontSize: "13px", letterSpacing: "2px", textTransform: "uppercase" }}>{source.name}</span>
+              {source.rating !== undefined && (
+                <>
+                  <Stars rating={source.rating} />
+                  <span style={{ color: "rgba(245, 239, 224, 0.75)", fontSize: "13px" }}>{source.rating.toFixed(1)}</span>
+                </>
+              )}
+            </span>
+            <span style={{ display: "block", fontSize: "15px", lineHeight: 1.6, marginBottom: "12px" }}>{source.detail}</span>
+            <span style={{ display: "block", color: COLORS.gold, fontSize: "13px", letterSpacing: "1px" }}>Read reviews &rarr;</span>
+          </a>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -403,6 +577,7 @@ function EventEnquiry() {
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
+  const [guests, setGuests] = useState("");
   const [details, setDetails] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [handedOff, setHandedOff] = useState(false);
@@ -419,25 +594,44 @@ function EventEnquiry() {
     if (!surname.trim()) found.surname = "Please enter your surname.";
     if (!email.trim()) found.email = "Please enter your email address.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) found.email = "That email address does not look right.";
+    // A digit rather than a strict number: "about 30" and "20-30" are how people actually
+    // answer this, and rejecting them would cost an enquiry to gain nothing.
+    if (!guests.trim()) found.guests = "Please give us a rough number of guests.";
+    else if (!/[0-9]/.test(guests)) found.guests = "Please include a number, even an approximate one.";
     if (!details.trim()) found.details = "Please tell us what you have in mind.";
     setErrors(found);
     if (Object.keys(found).length > 0) {
-      const firstBad = ["firstName", "surname", "email", "details"].find((key) => found[key]);
+      const firstBad = ["firstName", "surname", "email", "guests", "details"].find((key) => found[key]);
       document.getElementById(`enquiry-${firstBad}`)?.focus();
       return;
     }
 
-    const body = [`Name: ${firstName.trim()} ${surname.trim()}`, `Email: ${email.trim()}`, "", "Enquiry:", details.trim()].join("\r\n");
+    const body = [
+      `Name: ${firstName.trim()} ${surname.trim()}`,
+      `Email: ${email.trim()}`,
+      `Number of people: ${guests.trim()}`,
+      "",
+      "Enquiry:",
+      details.trim(),
+    ].join("\r\n");
     window.location.href = `mailto:${ENQUIRY_EMAIL}?subject=${encodeURIComponent("Event enquiry — The Pavillion")}&body=${encodeURIComponent(body)}`;
     setHandedOff(true);
   };
 
-  const field = (key: string, label: string, value: string, set: (v: string) => void, type = "text") => (
+  const field = (
+    key: string,
+    label: string,
+    value: string,
+    set: (v: string) => void,
+    type = "text",
+    inputMode?: "numeric",
+  ) => (
     <div className="enquiry-field">
       <label htmlFor={`enquiry-${key}`}>{label}</label>
       <input
         id={`enquiry-${key}`}
         type={type}
+        inputMode={inputMode}
         value={value}
         autoComplete={key === "firstName" ? "given-name" : key === "surname" ? "family-name" : key === "email" ? "email" : "off"}
         aria-invalid={errors[key] ? true : undefined}
@@ -496,6 +690,7 @@ function EventEnquiry() {
             {field("surname", "Surname", surname, setSurname)}
           </div>
           {field("email", "Email", email, setEmail, "email")}
+          {field("guests", "How many people?", guests, setGuests, "text", "numeric")}
 
           <div className="enquiry-field">
             <label htmlFor="enquiry-details">What are you enquiring about?</label>
@@ -605,6 +800,10 @@ function useNavHeight() {
     if (!nav) return;
 
     const publish = () => {
+      // An open menu makes the bar several hundred pixels tall. Publishing that would push
+      // every anchor jump down by the height of a menu that closes on the way there, so the
+      // measurement is only taken while the bar is at its resting height.
+      if (nav.querySelector('.nav-links[data-open="true"]')) return;
       document.documentElement.style.setProperty("--nav-height", `${Math.round(nav.getBoundingClientRect().height)}px`);
     };
 
@@ -616,11 +815,26 @@ function useNavHeight() {
 }
 
 export default function Home() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   useScrollReveal();
   useNavHeight();
 
+  // Escape closes the menu, matching what a keyboard user expects of any disclosure.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <>
+      <a href="#top" className="skip-link">
+        Skip to content
+      </a>
       <header style={{ position: "fixed", top: 0, width: "100%", zIndex: 100 }}>
         <nav
           className="site-nav"
@@ -635,10 +849,10 @@ export default function Home() {
         >
           <a
             href="#top"
+            className="nav-brand"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
               fontFamily: SIGN_FONT,
               color: COLORS.gold,
               fontSize: "19px",
@@ -652,15 +866,17 @@ export default function Home() {
               width={38}
               height={38}
               preload
+              className="nav-logo"
               style={{ borderRadius: "50%", border: `1px solid ${COLORS.gold}`, flexShrink: 0 }}
             />
             <span className="nav-wordmark">CUNNINGHAMS</span>
           </a>
-          <div className="nav-links">
+          <div className="nav-links" id="nav-links" data-open={menuOpen ? "true" : undefined}>
             {NAV_ITEMS.map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase()}`}
+                onClick={() => setMenuOpen(false)}
                 style={{
                   color: COLORS.offWhite,
                   textDecoration: "none",
@@ -679,12 +895,26 @@ export default function Home() {
           {/* Rooms is the secondary of the two, so it is outlined rather than filled: two solid
               gold blocks side by side compete, and the nav has little enough room as it is. */}
           <div className="nav-actions">
+            {/* "Book a" is dropped on phones, where the two buttons plus a name plus a menu
+                button do not fit otherwise. Beside each other in the bar, ROOM and TABLE
+                still read as the two things you can book. */}
             <a className="nav-book is-secondary" href={ROOMS_URL} target="_blank" rel="noopener noreferrer">
-              Book a Room
+              <span className="nav-book-verb">Book a </span>Room
             </a>
             <a className="nav-book" href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-              Book a Table
+              <span className="nav-book-verb">Book a </span>Table
             </a>
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-expanded={menuOpen}
+              aria-controls="nav-links"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span className="nav-toggle-bars" aria-hidden="true" />
+              <span className="nav-toggle-text">Menu</span>
+            </button>
           </div>
         </nav>
       </header>
@@ -710,7 +940,7 @@ export default function Home() {
           {/* On a tall phone, cover-cropping this landscape shot blows it up to ~3x the width the
               viewport implies, so sizes overstates the slot to pull in a larger source. */}
           <Image
-            src="/hero-dining-room.webp"
+            src="/hero-shopfront.webp"
             alt=""
             fill
             preload
@@ -796,11 +1026,11 @@ export default function Home() {
         </section>
 
         {/* About */}
-        <section id="about" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+        <section id="about" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.offWhite }}>
           <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
             <div data-reveal style={{ textAlign: "center" }}>
               <p style={label(COLORS.darkRed)}>Our Story</p>
-              <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "24px", color: COLORS.darkBlue }}>The Round Tower House</h2>
+              <h2 style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "24px", color: COLORS.darkBlue }}>The Round Tower House</h2>
               <div style={divider} />
             </div>
             <div className="split" data-stagger>
@@ -834,17 +1064,23 @@ export default function Home() {
 
         {/* Accolade */}
         <div data-reveal style={{ background: COLORS.darkRed, padding: "56px 40px", textAlign: "center" }}>
+          <div style={{ marginBottom: "14px" }}>
+            <Stars rating={4.7} size="clamp(24px, 4.5vw, 34px)" />
+          </div>
           <p style={{ color: COLORS.gold, fontSize: "clamp(18px, 3vw, 22px)", fontStyle: "italic", letterSpacing: "1px", marginBottom: "10px" }}>
-            Rated 4.5 out of 5 &mdash; ranked #3 of 46 restaurants in Kildare
+            Rated 4.7 out of 5 on Google
           </p>
-          <p style={{ color: "rgba(245, 239, 224, 0.75)", fontSize: "13px", letterSpacing: "2px", textTransform: "uppercase" }}>Tripadvisor</p>
+          <p style={{ color: "rgba(245, 239, 224, 0.75)", fontSize: "14px", lineHeight: 1.7 }}>
+            Ranked #3 of 46 restaurants in Kildare on Tripadvisor
+          </p>
+          <MoreReviews />
         </div>
 
         {/* Menu */}
-        <section id="menu" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+        <section id="menu" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.offWhite }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto", textAlign: "center" }}>
             <p data-reveal style={label(COLORS.darkRed)}>What We Serve</p>
-            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>Our Menu</h2>
+            <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>Our Menu</h2>
             <p data-reveal style={{ color: "#555", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
               Thai dishes and European classics, cooked to order.
             </p>
@@ -862,27 +1098,54 @@ export default function Home() {
             <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(230px, 100%), 1fr))", gap: "44px", textAlign: "left" }}>
               {MENU.map((section) => (
                 <div key={section.category} data-reveal>
-                  <h3 style={{ fontSize: "20px", color: COLORS.darkBlue, marginBottom: "18px", paddingBottom: "12px", borderBottom: `2px solid ${COLORS.darkRed}` }}>
+                  <h3 style={{ fontSize: "20px", color: COLORS.darkBlue, marginBottom: section.note ? "8px" : "18px", paddingBottom: "12px", borderBottom: `2px solid ${COLORS.darkRed}` }}>
                     {section.category}
                   </h3>
+                  {section.note && (
+                    <p style={{ fontSize: "13px", color: "#666", fontStyle: "italic", lineHeight: 1.55, marginBottom: "16px" }}>{section.note}</p>
+                  )}
                   <ul style={{ listStyle: "none" }}>
                     {section.items.map((item) => (
-                      <li key={item} style={{ fontSize: "15px", color: "#1a1a1a", marginBottom: "11px", lineHeight: 1.5 }}>
-                        {item}
+                      <li
+                        key={item.name}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "baseline",
+                          gap: "12px",
+                          fontSize: "15px",
+                          color: "#1a1a1a",
+                          marginBottom: "11px",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <span>
+                          {item.name}
+                          {item.desc && (
+                            <span style={{ display: "block", fontSize: "13px", color: "#666", lineHeight: 1.5, marginTop: "3px" }}>{item.desc}</span>
+                          )}
+                        </span>
+                        {item.price && (
+                          <span style={{ color: COLORS.darkRed, fontWeight: 700, whiteSpace: "nowrap" }}>{item.price}</span>
+                        )}
                       </li>
                     ))}
                   </ul>
                 </div>
               ))}
             </div>
+
+            <p data-reveal style={{ marginTop: "40px", fontSize: "13px", color: "#666", fontStyle: "italic", lineHeight: 1.7 }}>
+              Extra sides €4 · half and half portions €2.50 extra. Please talk to our staff about any dietary requirements or allergens.
+            </p>
           </div>
         </section>
 
         {/* Drinks */}
-        <section id="drinks" style={{ padding: "100px 40px", background: COLORS.darkRed }}>
+        <section id="drinks" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.darkRed }}>
           <div style={{ maxWidth: "1100px", margin: "0 auto", textAlign: "center" }}>
             <p data-reveal style={label(COLORS.gold)}>At the Bar</p>
-            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Wine &amp; Spirits</h2>
+            <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Wine &amp; Spirits</h2>
             <p data-reveal style={{ color: "rgba(245, 239, 224, 0.8)", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
               A full bar with wines by the glass or bottle, Irish whiskey and gin, and ten taps.
             </p>
@@ -918,11 +1181,11 @@ export default function Home() {
         </section>
 
         {/* Pavillion */}
-        <section id="pavillion" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+        <section id="pavillion" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.offWhite }}>
           <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
             <div data-reveal style={{ textAlign: "center" }}>
               <p style={label(COLORS.darkRed)}>Outside</p>
-              <h2 style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Pavillion</h2>
+              <h2 style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Pavillion</h2>
               <p style={{ color: "#555", fontSize: "16px", maxWidth: "580px", margin: "0 auto 28px", lineHeight: 1.8 }}>
                 Our covered outdoor bar &mdash; heated, roofed and open to the garden, whatever the weather is doing.
               </p>
@@ -969,7 +1232,7 @@ export default function Home() {
         </section>
 
         {/* Live Music */}
-        <section id="music" style={{ position: "relative", padding: "100px 40px", background: COLORS.darkBlue, overflow: "hidden" }}>
+        <section id="music" style={{ position: "relative", padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.darkBlue, overflow: "hidden" }}>
           <div
             aria-hidden="true"
             style={{
@@ -985,7 +1248,7 @@ export default function Home() {
           />
           <div style={{ position: "relative", maxWidth: "1000px", margin: "0 auto", textAlign: "center" }}>
             <p data-reveal style={label(COLORS.gold)}>In the Bar</p>
-            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Live Music</h2>
+            <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.offWhite }}>Live Music</h2>
             <p data-reveal style={{ color: "rgba(245, 239, 224, 0.8)", fontSize: "16px", maxWidth: "560px", margin: "0 auto 28px", lineHeight: 1.8 }}>
               A lively crowd of local trad musicians gather in the bar to entertain several nights a week.
             </p>
@@ -1013,10 +1276,10 @@ export default function Home() {
         </section>
 
         {/* Rooms */}
-        <section id="rooms" style={{ padding: "100px 40px", background: COLORS.offWhite }}>
+        <section id="rooms" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.offWhite }}>
           <div style={{ maxWidth: "1120px", margin: "0 auto", textAlign: "center" }}>
             <p data-reveal style={label(COLORS.darkRed)}>Stay With Us</p>
-            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Rooms at Cunninghams</h2>
+            <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "20px", color: COLORS.darkBlue }}>The Rooms at Cunninghams</h2>
             <p data-reveal style={{ color: "#555", fontSize: "16px", maxWidth: "600px", margin: "0 auto 28px", lineHeight: 1.8 }}>
               Ten boutique adults-only rooms in the heart of Kildare Town &mdash; minutes from Kildare Village and a short drive from the Curragh Racecourse.
             </p>
@@ -1066,10 +1329,10 @@ export default function Home() {
         </section>
 
         {/* Opening Hours */}
-        <section id="hours" style={{ padding: "100px 40px", background: COLORS.darkRed }}>
+        <section id="hours" style={{ padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", background: COLORS.darkRed }}>
           <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
             <p data-reveal style={label(COLORS.gold)}>When to Find Us</p>
-            <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, marginBottom: "16px", color: COLORS.offWhite }}>Opening Hours</h2>
+            <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, marginBottom: "16px", color: COLORS.offWhite }}>Opening Hours</h2>
             <div data-reveal style={divider} />
             <div data-stagger style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "56px", textAlign: "left" }}>
               {[
@@ -1120,9 +1383,9 @@ export default function Home() {
         </section>
 
         {/* Contact */}
-        <section id="contact" style={{ background: COLORS.darkBlue, padding: "100px 40px", textAlign: "center" }}>
+        <section id="contact" style={{ background: COLORS.darkBlue, padding: "clamp(64px, 9vw, 100px) clamp(20px, 5vw, 40px)", textAlign: "center" }}>
           <p data-reveal style={label(COLORS.gold)}>Get In Touch</p>
-          <h2 data-reveal style={{ fontSize: "36px", fontWeight: 300, color: COLORS.offWhite, marginBottom: "16px" }}>Find Us</h2>
+          <h2 data-reveal style={{ fontSize: "clamp(27px, 4.4vw, 40px)", fontWeight: 300, color: COLORS.offWhite, marginBottom: "16px" }}>Find Us</h2>
           <div data-reveal style={divider} />
           <div data-stagger style={{ display: "flex", justifyContent: "center", gap: "72px", flexWrap: "wrap", marginBottom: "56px" }}>
             <div data-reveal>
@@ -1134,6 +1397,24 @@ export default function Home() {
                 <br />
                 County Kildare
               </p>
+              <a
+                href={DIRECTIONS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  marginTop: "10px",
+                  color: COLORS.gold,
+                  fontSize: "13px",
+                  letterSpacing: "1.5px",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  borderBottom: `1px solid rgba(201, 168, 76, 0.4)`,
+                  paddingBottom: "2px",
+                }}
+              >
+                Get directions
+              </a>
             </div>
             <div data-reveal>
               <p style={{ color: COLORS.gold, fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>Phone</p>

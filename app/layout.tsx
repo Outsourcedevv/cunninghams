@@ -5,17 +5,36 @@ import "./globals.css";
 // Matches the Victorian signwriting on the pub frontage. Name only, never body copy.
 const rye = Rye({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-sign" });
 
+// A share card needs an absolute URL — a scraper on Facebook or WhatsApp has no page to
+// resolve a relative one against. Overridable so a move to a custom domain is one variable.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://outsourcedevv.github.io/cunninghams";
+
+const SHARE_DESCRIPTION =
+  "Award winning gastro pub on Kildare's Market Square since 1916. Thai and European cooking, live trad music, and ten boutique rooms.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Cunninghams Kildare | Bar, Restaurant & Rooms",
   description:
     "Award winning gastro pub in the Round Tower House on Kildare's Market Square since 1916. Thai and European cooking, live trad music, and ten boutique rooms.",
   keywords: ["Cunninghams Kildare", "restaurant Kildare", "gastro pub Kildare", "live music Kildare", "Thai food Kildare", "rooms Kildare Town"],
+  alternates: { canonical: "/" },
   openGraph: {
     title: "Cunninghams Kildare | Bar, Restaurant & Rooms",
-    description:
-      "Award winning gastro pub on Kildare's Market Square since 1916. Thai and European cooking, live trad music, and ten boutique rooms.",
+    description: SHARE_DESCRIPTION,
     type: "website",
     locale: "en_IE",
+    siteName: "Cunninghams",
+    url: "/",
+    // Without this, a link shared to WhatsApp or Facebook — which is how a pub actually
+    // travels — arrives as a bare grey box. 1200x630 is what the scrapers crop to.
+    images: [{ url: "/og-card.jpg", width: 1200, height: 630, alt: "The dining room at Cunninghams, Market Square, Kildare" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cunninghams Kildare | Bar, Restaurant & Rooms",
+    description: SHARE_DESCRIPTION,
+    images: ["/og-card.jpg"],
   },
 };
 
@@ -59,6 +78,14 @@ const HEAD_SCRIPT = `
     gate.textContent = '[data-reveal]{opacity:1 !important;transform:none !important;transition:none !important}';
   };
   window.__revealFailsafe = setTimeout(window.__dropRevealGate, 2500);
+
+  // Collapses the link list into a menu, in its own element so dropping the reveal gate
+  // above cannot take it with it. Same bargain: no script, no collapsing, and the links
+  // stay in the bar exactly as they were.
+  var navGate = document.createElement('style');
+  navGate.id = 'nav-gate';
+  navGate.textContent = '@media (max-width:1150px){.nav-links:not([data-open="true"]){display:none}.nav-toggle{display:inline-flex}}';
+  document.head.appendChild(navGate);
 })();
 `;
 
