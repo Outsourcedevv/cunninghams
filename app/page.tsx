@@ -53,19 +53,24 @@ const NAV_ITEMS = ["About", "Video", "Menu", "Pavillion", "Music", "Rooms", "Hou
 
 const PAVILION_PHOTOS = [
   {
-    src: "/pavilion-interior.webp",
-    alt: "The Pavillion's timber-roofed room at Cunninghams, with buttoned leather banquettes, cast iron tables and glazed sides opening onto greenery",
-    caption: "Under the timber roof",
+    src: "/pavilion-room.webp",
+    alt: "The Pavillion at Cunninghams: bentwood chairs and candlelit tables under a timber roof, tall windows along one side and a Guinness Six Nations banner overhead",
+    caption: "The long room, set for the afternoon",
   },
   {
-    src: "/pavilion-fireside.webp",
-    alt: "Buttoned leather booths, framed racing prints and wall-mounted screens beside the stove in the Pavillion",
-    caption: "Booths, screens and the stove",
+    src: "/pavilion-flags.webp",
+    alt: "Rugby flags strung across the Pavillion's timber ceiling above a green banquette, a screen and a window throwing light across the floorboards",
+    caption: "Strung with flags on a match day",
   },
   {
-    src: "/pavilion-roof.webp",
-    alt: "Looking up at the Pavillion's painted timber roof, its overhead heaters, a vintage Player's Please sign and a mounted wooden propeller",
-    caption: "Player's Please, and an old propeller",
+    src: "/pavilion-matchday.webp",
+    alt: "A mounted wooden propeller above the bar in the Pavillion, an upright piano beneath a portrait, tall windows either side and candlelit tables across the floor",
+    caption: "The propeller, the piano and the windows",
+  },
+  {
+    src: "/pavilion-corner.webp",
+    alt: "A corner table in the Pavillion beneath a vintage Motorine enamel sign, lit by a pleated lamp against reclaimed timber walls",
+    caption: "A corner table under the Motorine sign",
   },
 ];
 
@@ -1206,10 +1211,10 @@ export default function Home() {
               </div>
               <figure className="split-media" data-reveal>
                 <Image
-                  src="/pavilion-door.webp"
-                  alt="The etched glass door into the Pavillion at Cunninghams, with tables and the timber roof beyond"
-                  width={1024}
-                  height={681}
+                  src="/pavilion-worldcup.webp"
+                  alt="The Pavillion at Cunninghams with its roof rolled back to open sky, glazed sides looking out over the rooftops, a large screen showing a match and rattan stools drawn up to the tables"
+                  width={720}
+                  height={628}
                   sizes="(max-width: 820px) 100vw, 560px"
                 />
               </figure>
